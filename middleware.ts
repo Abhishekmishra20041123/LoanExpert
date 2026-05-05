@@ -3,27 +3,21 @@ import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const customerToken = request.cookies.get('customer_token')?.value
-  const adminToken = request.cookies.get('admin_token')?.value
 
-  // 1. Define Public Routes (Anyone can access)
-  const publicPaths = [
-    '/login',
-    '/register',
-    '/',
-    '/about',
-    '/contact',
-    '/faq',
-    '/blog',
-  ]
 
+  // 1. Define Public Routes
   const isPublicPage = 
-    publicPaths.includes(pathname) ||
+    pathname === '/login' || 
+    pathname === '/register' ||
+    pathname === '/' ||
+    pathname === '/about' ||
+    pathname === '/contact' ||
+    pathname === '/faq' ||
+    pathname === '/blog' ||
     pathname.startsWith('/api/public') ||
     pathname.startsWith('/api/auth')
 
-  // 2. Define Protected Routes (Must be logged in)
-  // We protect everything else by default, except static assets
+  // 2. Define Protected Routes Logic
   const isStaticAsset = 
     pathname.startsWith('/_next') || 
     pathname.startsWith('/logo.png') ||
@@ -34,16 +28,24 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // 3. Redirect to login if not authenticated
-  if (!customerToken && !adminToken) {
-    // Save the original URL to redirect back after login
+  // 3. Robust Session Check
+  // Check multiple ways to ensure we catch the cookie
+  const customerToken = request.cookies.get('customer_token')
+  const adminToken = request.cookies.get('admin_token')
+  const hasSession = !!customerToken || !!adminToken
+
+  if (!hasSession) {
     const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('from', pathname)
+    // Avoid appending 'from=/' to the URL if they are already on the way to login
+    if (pathname !== '/') {
+      loginUrl.searchParams.set('from', pathname)
+    }
     return NextResponse.redirect(loginUrl)
   }
 
   return NextResponse.next()
 }
+
 
 // Ensure the middleware runs on all routes except specific ones
 export const config = {
