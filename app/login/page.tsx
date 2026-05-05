@@ -1,5 +1,6 @@
 'use client'
 
+import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -17,6 +18,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const from = searchParams.get('from') || '/dashboard'
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,7 +28,7 @@ export default function LoginPage() {
 
     const result = await login(email, password)
     if (result.ok) {
-      router.push('/dashboard')
+      router.push(from)
     } else {
       setError(result.error || 'Invalid email or password')
       setPassword('')
